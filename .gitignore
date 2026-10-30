@@ -46,6 +46,7 @@ build-*/
 # CMake generated files
 CMakeFiles/
 CMakeCache.txt
+CMakeUserPresets.json
 cmake_install.cmake
 Makefile
 install_manifest.txt
@@ -66,3 +67,22 @@ vcpkg_installed/
 # test output & cache
 Testing/
 .cache/
+
+# 빌드 결과
+build/
+out/
+.vs/
+.vscode/
+
+# 데이터·결과 (기능 명세 §2-2: git 제외)
+data/
+output/
+runs/
+
+# 모델 파일: 보관 방식(TRN-07) 결정 전까지 제외
+models/*.onnx
+
+# Python
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
