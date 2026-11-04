@@ -1,6 +1,6 @@
 ---
 name: "조사·실험"
-about: "[미정] 항목을 정하기 위한 조사나 실험입니다 (RESEARCH)"
+about: "항목을 정하기 위한 조사나 실험입니다 (RESEARCH)"
 title: "[RESEARCH] "
 labels: ""
 assignees: ""
