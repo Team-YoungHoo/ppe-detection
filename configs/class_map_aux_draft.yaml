@@ -1,0 +1,11 @@
+# Auxiliary dataset (Construction PPE) - DRAFT, not merged
+# Format: source id: unified id
+# Unified ids: person=0, helmet=1, vest=2, no-helmet=3, no-vest=4
+# Status: draft until agenda 6 (AGPL-3.0) and TRN-01 are decided
+0: 1    # helmet -> helmet
+2: 2    # vest -> vest
+5: 0    # Person -> person
+6: 3    # no_helmet -> no-helmet (TRN-01 change, needs team confirmation)
+11: 4   # no_vest -> no-vest (class exists in data.yaml; check instance count)
+# Dropped (no unified class):
+#   1 gloves, 3 boots, 4 goggles, 7 no_goggle, 8 no_gloves, 9 no_boots, 10 forklift
