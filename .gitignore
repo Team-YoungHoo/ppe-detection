@@ -86,3 +86,14 @@ models/*.onnx
 __pycache__/
 *.pyc
 .ipynb_checkpoints/
+
+datasets/
+data/
+runs/
+*.pt
+*.onnx
+__pycache__/
+.venv/
+
+*.zipno_helmet_list.txt 
+folder_structure.txt 
