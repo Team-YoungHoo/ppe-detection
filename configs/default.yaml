@@ -26,3 +26,12 @@ eval:
   target_map: 0.80                     # 목표 mAP@0.5 (NFR-01)
   focus_classes: [no-helmet, no-vest]  # recall을 따로 확인할 미착용 클래스
   output: runs/eval                    # 결과 표(results.csv, results.md)와 그래프 위치 (git 제외)
+
+compare:
+  # 모델 크기별 비교 (TRN-05). 정확도는 evaluate.py 결과(runs/eval/results.csv)를 읽습니다.
+  select_split: val     # 모델 선정에 쓸 분할 (test는 최종 보고용으로 남김)
+  speed_split: test     # 속도 측정에 쓸 이미지
+  warmup: 10            # 속도 측정 전 버리는 이미지 수 (GPU 첫 실행은 느림)
+  repeats: 3            # 속도 측정 반복 횟수, 평균을 씀 (DET-05·EVL-02와 같은 기준)
+  target_fps: 10        # NFR-02. 원래 기준은 C++ 전체 파이프라인 FPS(EVL-02)이며, 여기서는 Python 처리 시간으로 잠정 판단
+  output: runs/compare  # 비교 표(compare.csv, compare.md) 위치 (git 제외)
