@@ -18,3 +18,11 @@ train:
   deterministic: true
   device: 0          # GPU 번호. GPU가 없는 PC에서 동작만 확인할 때는 --device cpu
   project: runs      # 결과 위치: runs/<모델 이름>/ (git 제외)
+
+eval:
+  # 탐지 성능 평가 (EVL-01). 모델·imgsz·device는 train 설정을 그대로 씁니다.
+  splits: [val, test]                  # data.yaml의 키 이름 (val = valid 폴더)
+  iou_thr: 0.5                         # mAP@0.5. 0.50~0.95 사이 0.05 단위만 가능
+  target_map: 0.80                     # 목표 mAP@0.5 (NFR-01)
+  focus_classes: [no-helmet, no-vest]  # recall을 따로 확인할 미착용 클래스
+  output: runs/eval                    # 결과 표(results.csv, results.md)와 그래프 위치 (git 제외)
