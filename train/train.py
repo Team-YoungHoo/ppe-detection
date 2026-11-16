@@ -68,16 +68,17 @@ def environment_info():
     import torch
     import ultralytics
 
+    # torch.__version__ 는 str을 상속한 TorchVersion 객체라 yaml.safe_dump가 저장하지 못하므로 str()로 바꿉니다.
     info = {
         "python": platform.python_version(),
         "os": platform.platform(),
-        "torch": torch.__version__,
-        "ultralytics": ultralytics.__version__,
-        "cuda_available": torch.cuda.is_available(),
+        "torch": str(torch.__version__),
+        "ultralytics": str(ultralytics.__version__),
+        "cuda_available": bool(torch.cuda.is_available()),
     }
     if torch.cuda.is_available():
-        info["cuda"] = torch.version.cuda
-        info["gpu"] = torch.cuda.get_device_name(0)
+        info["cuda"] = str(torch.version.cuda)
+        info["gpu"] = str(torch.cuda.get_device_name(0))
         info["gpu_memory_gb"] = round(torch.cuda.get_device_properties(0).total_memory / 1024**3, 1)
     return info
 
