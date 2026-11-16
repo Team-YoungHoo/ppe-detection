@@ -94,6 +94,6 @@ runs/
 *.onnx
 __pycache__/
 .venv/
-
-*.zipno_helmet_list.txt 
+*.zip
+no_helmet_list.txt 
 folder_structure.txt 
