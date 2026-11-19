@@ -3,8 +3,8 @@
 
 train:
   # 데이터셋 (TRN-01~03, 강다온 정리본). 경로는 저장소 루트 기준입니다.
-  data: "data/processed/construction safety.v2-release.yolov8/data.yaml"
-  dataset_version: "construction safety.v2-release.yolov8 (5클래스 통일, train만 오프라인 증강)"
+  data: "data/processed_v2/construction safety.v3-release.yolov8-20261119T040257Z-1-001/construction safety.v3-release.yolov8/data.yaml"
+  dataset_version: "construction safety.v3-release.yolov8 (valid·test 전수 검수, train 후보 검수, no-helmet 증강 232장)"
   names: [person, helmet, vest, no-helmet, no-vest]   # 순서 변경 금지 (classes.txt, C++ 설정과 동일)
 
   # 비교 대상 모델 (설계 회의록 2부 확정: Ultralytics 사전학습 가중치)
