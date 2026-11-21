@@ -2,12 +2,29 @@ cmake_minimum_required(VERSION 3.21)
 project(safety_app CXX)
 set(CMAKE_CXX_STANDARD 17)
 find_package(OpenCV REQUIRED)
+
+# 모듈 코드 (main.cpp를 뺀 나머지)
+# safety_app과 테스트가 같이 씀
+add_library(ppe_core STATIC
+  src/io/VideoSource.cpp
+)
+target_include_directories(ppe_core PUBLIC src)
+target_link_libraries(ppe_core PUBLIC ${OpenCV_LIBS})
+
 add_executable(safety_app src/main.cpp)
-target_link_libraries(safety_app ${OpenCV_LIBS})
+target_link_libraries(safety_app PRIVATE ppe_core)
+
+# 단위 테스트 (ctest 또는 exe 직접 실행)
+enable_testing()
+add_executable(test_video_source tests/test_video_source.cpp)
+target_link_libraries(test_video_source PRIVATE ppe_core)
+add_test(NAME video_source COMMAND test_video_source)
 
 # MSVC가 소스 파일을 UTF-8로 읽도록 설정 (한글 주석·문자열 깨짐 방지)
 if(MSVC)
-  target_compile_options(safety_app PRIVATE /utf-8)
+  foreach(t ppe_core safety_app test_video_source)
+    target_compile_options(${t} PRIVATE /utf-8)
+  endforeach()
 endif()
 
 # Windows에서 빌드 후 OpenCV DLL을 exe와 같은 폴더로 복사 (PATH 환경 변수 설정 불필요)
