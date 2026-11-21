@@ -3,7 +3,7 @@
 // letterbox() : 어떤 크기의 프레임이든 비율을 유지해 S x S로 맞추고 남는 곳은 회색(pad_value)으로 채움
 //               Ultralytics 학습·변환과 같은 규칙 (models/model.yaml의 preprocess)
 // toBlob()    : S x S BGR 이미지 -> {1, 3, S, S} float32 RGB 텐서 (값 범위 0~1)
-// toOriginal(): 모델 입력 좌표 -> 원본 프레임 좌표
+// toOriginal(): 모델 입력 좌표의 점 -> 원본 프레임 좌표의 점
 
 #pragma once
 
@@ -12,12 +12,12 @@
 // 프레임을 어떻게 변환했는지 기록함. 탐지 결과를 원본 좌표로 되돌릴 때 필요함
 struct LetterboxInfo {
     float scale = 1.0f;      // 계산한 배율: min(S / 세로, S / 가로)
-    float scale_x = 1.0f;    // 반올림 후 실제 가로 배율: resized.width / 가로
-    float scale_y = 1.0f;    // 반올림 후 실제 세로 배율: resized.height / 세로
+    float scale_x = 1.0f;    // 반올림 후 실제 가로 배율: 새 가로 / 원본 가로
+    float scale_y = 1.0f;    // 반올림 후 실제 세로 배율: 새 세로 / 원본 세로
     int pad_x = 0;           // 왼쪽에 넣은 회색 픽셀 수
     int pad_y = 0;           // 위쪽에 넣은 회색 픽셀 수
-    cv::Size src_size;       // 원본 프레임 크기 (가로, 세로)
-    cv::Size resized;        // S x S 안에서 패딩을 뺀 실제 이미지 크기
+    int orig_w = 0;          // 원본 프레임 가로
+    int orig_h = 0;          // 원본 프레임 세로
 };
 
 struct LetterboxResult {
@@ -33,7 +33,5 @@ LetterboxResult letterbox(const cv::Mat& src, int size, int pad_value = 114);
 // VIN-03. scale = 1/255, swap_rb = true (BGR -> RGB), NCHW 배치, float32
 cv::Mat toBlob(const cv::Mat& letterboxed, double scale = 1.0 / 255.0, bool swap_rb = true);
 
-// 점이나 박스를 모델 입력 좌표에서 원본 프레임 좌표로 되돌림
-// 박스가 프레임 밖으로 나가면 프레임 안으로 잘라 냄
+// VIN-02 검증용 역변환. 점 하나를 모델 입력 좌표에서 원본 프레임 좌표로 되돌림
 cv::Point2f toOriginal(const cv::Point2f& p, const LetterboxInfo& info);
-cv::Rect2f toOriginal(const cv::Rect2f& box, const LetterboxInfo& info);

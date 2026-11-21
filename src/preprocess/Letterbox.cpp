@@ -51,8 +51,8 @@ LetterboxResult letterbox(const cv::Mat& src, int size, int pad_value)
     out.info.scale_y = static_cast<float>(new_h) / h;
     out.info.pad_x = left;
     out.info.pad_y = top;
-    out.info.src_size = src.size();
-    out.info.resized = cv::Size(new_w, new_h);
+    out.info.orig_w = w;
+    out.info.orig_h = h;
     return out;
 }
 
@@ -67,20 +67,6 @@ cv::Mat toBlob(const cv::Mat& letterboxed, double scale, bool swap_rb)
 cv::Point2f toOriginal(const cv::Point2f& p, const LetterboxInfo& info)
 {
     // 축별 실제 배율을 사용함
-    // 크기를 반올림하면 scale과 달라져서 박스가 최대 0.5 / scale 픽셀 밀릴 수 있음
+    // 크기를 반올림하면 scale과 달라져서 좌표가 최대 0.5 / scale 픽셀 밀릴 수 있음
     return { (p.x - info.pad_x) / info.scale_x, (p.y - info.pad_y) / info.scale_y };
-}
-
-cv::Rect2f toOriginal(const cv::Rect2f& box, const LetterboxInfo& info)
-{
-    const cv::Point2f tl = toOriginal(box.tl(), info);
-    const cv::Point2f br = toOriginal(box.br(), info);
-
-    const float max_x = static_cast<float>(info.src_size.width);
-    const float max_y = static_cast<float>(info.src_size.height);
-    const float x1 = std::clamp(tl.x, 0.0f, max_x);
-    const float y1 = std::clamp(tl.y, 0.0f, max_y);
-    const float x2 = std::clamp(br.x, 0.0f, max_x);
-    const float y2 = std::clamp(br.y, 0.0f, max_y);
-    return { x1, y1, x2 - x1, y2 - y1 };
 }

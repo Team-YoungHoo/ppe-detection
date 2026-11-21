@@ -52,10 +52,17 @@ cv::Mat coordinateFrame(int w, int h)
     return frame;
 }
 
+// S x S 안에서 패딩을 뺀 실제 이미지 크기
+cv::Size resizedSize(const LetterboxInfo& info)
+{
+    return { static_cast<int>(std::lround(info.orig_w * info.scale_x)),
+        static_cast<int>(std::lround(info.orig_h * info.scale_y)) };
+}
+
 float maxMappingError(const LetterboxResult& r)
 {
     float max_err = 0.0f;
-    const cv::Rect area(r.info.pad_x, r.info.pad_y, r.info.resized.width, r.info.resized.height);
+    const cv::Rect area(cv::Point(r.info.pad_x, r.info.pad_y), resizedSize(r.info));
     for (int my = area.y; my < area.br().y; ++my) {
         const auto* row = r.image.ptr<cv::Vec3f>(my);
         for (int mx = area.x; mx < area.br().x; ++mx) {
@@ -78,8 +85,9 @@ void testSize(int w, int h, int S)
         tag + ": output is " + std::to_string(S) + "x" + std::to_string(S));
 
     // 변환된 이미지는 S x S 안에 들어가고 한 축은 양쪽 끝에 닿아야 함
-    const int new_w = r.info.resized.width;
-    const int new_h = r.info.resized.height;
+    const cv::Size resized = resizedSize(r.info);
+    const int new_w = resized.width;
+    const int new_h = resized.height;
     const bool fits = (new_w == S || new_h == S) && new_w <= S && new_h <= S;
     check(fits, tag + ": aspect ratio kept, long side = S (scale " + std::to_string(r.info.scale) + ")");
 
@@ -96,18 +104,10 @@ void testPadColor()
     const cv::Vec3b bottom = r.image.at<cv::Vec3b>(639, 320);
     const cv::Vec3b center = r.image.at<cv::Vec3b>(320, 320);
     check(r.info.pad_x == 0 && r.info.pad_y == 140, "1920x1080: pad_x 0, pad_y 140");
+    check(r.info.orig_w == 1920 && r.info.orig_h == 1080, "1920x1080: orig_w, orig_h are stored");
     check(top == cv::Vec3b(114, 114, 114) && bottom == cv::Vec3b(114, 114, 114),
         "padding color is (114, 114, 114)");
     check(center == cv::Vec3b(0, 0, 0), "image area is not padded");
-}
-
-void testBoxClip()
-{
-    cv::Mat frame(1080, 1920, CV_8UC3);
-    const LetterboxResult r = letterbox(frame, 640);
-    // 위쪽 패딩까지 걸친 박스는 프레임 안으로 잘려야 함
-    const cv::Rect2f back = toOriginal(cv::Rect2f(100.0f, 100.0f, 60.0f, 90.0f), r.info);
-    check(back.y == 0.0f && back.height > 0.0f, "box in padding area is clipped to the frame");
 }
 
 void testEmpty()
@@ -144,10 +144,15 @@ int view(const std::string& image_path, const std::string& out_dir, int S)
     LetterboxResult r = letterbox(img, S);
 
     // 이미지 영역 가운데에 놓은 가짜 박스 (모델 좌표)
-    const cv::Rect2f model_box(r.info.pad_x + r.info.resized.width * 0.25f,
-        r.info.pad_y + r.info.resized.height * 0.25f,
-        r.info.resized.width * 0.5f, r.info.resized.height * 0.5f);
-    const cv::Rect2f original_box = toOriginal(model_box, r.info);
+    const cv::Size resized = resizedSize(r.info);
+    const cv::Point2f model_tl(r.info.pad_x + resized.width * 0.25f,
+        r.info.pad_y + resized.height * 0.25f);
+    const cv::Point2f model_br(r.info.pad_x + resized.width * 0.75f,
+        r.info.pad_y + resized.height * 0.75f);
+    const cv::Rect2f model_box(model_tl, model_br);
+
+    // 두 모서리를 점 역변환으로 되돌려 원본 위치의 박스를 만듦
+    const cv::Rect2f original_box(toOriginal(model_tl, r.info), toOriginal(model_br, r.info));
 
     cv::Mat original = img.clone();
     const int thickness = std::max(2, static_cast<int>(std::lround(2 / r.info.scale)));
@@ -161,8 +166,8 @@ int view(const std::string& image_path, const std::string& out_dir, int S)
         std::cerr << "[ERROR] Cannot write images to: " << out_dir << "\n";
         return 2;
     }
-    std::cout << "[INFO] " << img.cols << "x" << img.rows << " -> " << r.info.resized.width << "x"
-        << r.info.resized.height << " + pad (" << r.info.pad_x << ", " << r.info.pad_y << ")\n"
+    std::cout << "[INFO] " << img.cols << "x" << img.rows << " -> " << resized.width << "x"
+        << resized.height << " + pad (" << r.info.pad_x << ", " << r.info.pad_y << ")\n"
         << "[INFO] Saved: " << before << "\n[INFO] Saved: " << after << "\n";
     return 0;
 }
@@ -213,7 +218,6 @@ int main(int argc, char** argv)
     testSize(1918, 1078, 640);  // 반올림 경우
     testSize(1920, 1080, 960);  // 960 입력 모델
     testPadColor();
-    testBoxClip();
     testEmpty();
     testBlob();
 
