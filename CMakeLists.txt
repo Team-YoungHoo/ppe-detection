@@ -7,6 +7,7 @@ find_package(OpenCV REQUIRED)
 # safety_app과 테스트가 같이 씀
 add_library(ppe_core STATIC
   src/io/VideoSource.cpp
+  src/pipeline/Pipeline.cpp
   src/preprocess/Letterbox.cpp
   src/ui/MonitorWindow.cpp
 )
@@ -27,10 +28,13 @@ add_test(NAME letterbox COMMAND test_letterbox)
 add_executable(test_monitor_window tests/test_monitor_window.cpp)
 target_link_libraries(test_monitor_window PRIVATE ppe_core)
 add_test(NAME monitor_window COMMAND test_monitor_window)
+add_executable(test_pipeline tests/test_pipeline.cpp)
+target_link_libraries(test_pipeline PRIVATE ppe_core)
+add_test(NAME pipeline COMMAND test_pipeline)
 
 # MSVC가 소스 파일을 UTF-8로 읽도록 설정 (한글 주석·문자열 깨짐 방지)
 if(MSVC)
-  foreach(t ppe_core safety_app test_video_source test_letterbox test_monitor_window)
+  foreach(t ppe_core safety_app test_video_source test_letterbox test_monitor_window test_pipeline)
     target_compile_options(${t} PRIVATE /utf-8)
   endforeach()
 endif()
