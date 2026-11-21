@@ -8,6 +8,7 @@ find_package(OpenCV REQUIRED)
 add_library(ppe_core STATIC
   src/io/VideoSource.cpp
   src/preprocess/Letterbox.cpp
+  src/ui/MonitorWindow.cpp
 )
 target_include_directories(ppe_core PUBLIC src)
 target_link_libraries(ppe_core PUBLIC ${OpenCV_LIBS})
@@ -23,10 +24,13 @@ add_test(NAME video_source COMMAND test_video_source)
 add_executable(test_letterbox tests/test_letterbox.cpp)
 target_link_libraries(test_letterbox PRIVATE ppe_core)
 add_test(NAME letterbox COMMAND test_letterbox)
+add_executable(test_monitor_window tests/test_monitor_window.cpp)
+target_link_libraries(test_monitor_window PRIVATE ppe_core)
+add_test(NAME monitor_window COMMAND test_monitor_window)
 
 # MSVC가 소스 파일을 UTF-8로 읽도록 설정 (한글 주석·문자열 깨짐 방지)
 if(MSVC)
-  foreach(t ppe_core safety_app test_video_source test_letterbox)
+  foreach(t ppe_core safety_app test_video_source test_letterbox test_monitor_window)
     target_compile_options(${t} PRIVATE /utf-8)
   endforeach()
 endif()
