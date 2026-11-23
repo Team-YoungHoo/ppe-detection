@@ -112,6 +112,7 @@ bool OpenCvDnnDetector::load(const std::string& model_path, const std::string& n
 
     net_ = std::move(net);
     names_ = std::move(names);
+    conf_thresholds_.assign(names_.size(), kDefaultConfThreshold);
     return true;
 }
 
@@ -120,5 +121,15 @@ std::vector<Detection> OpenCvDnnDetector::detect(const cv::Mat& blob, const Lett
     if (net_.empty() || blob.empty()) return {};
 
     net_.setInput(blob);
-    return decodeDetections(net_.forward(), info);
+    return filterByConfidence(decodeDetections(net_.forward(), info), conf_thresholds_);
+}
+
+bool OpenCvDnnDetector::setConfThresholds(const std::vector<float>& thresholds, std::string& error)
+{
+    if (!isValidConfThresholds(thresholds, static_cast<int>(names_.size()))) {
+        error = "Invalid confidence thresholds (need one 0~1 value per class)";
+        return false;
+    }
+    conf_thresholds_ = thresholds;
+    return true;
 }

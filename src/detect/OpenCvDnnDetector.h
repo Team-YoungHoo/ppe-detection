@@ -13,9 +13,12 @@ public:
 
     std::vector<Detection> detect(const cv::Mat& blob, const LetterboxInfo& info) override;
 
+    bool setConfThresholds(const std::vector<float>& thresholds, std::string& error) override;
+
     const std::vector<std::string>& classNames() const override { return names_; }
 
 private:
     cv::dnn::Net net_;
     std::vector<std::string> names_;
+    std::vector<float> conf_thresholds_;  // 클래스별 신뢰도 임계값 (순서 = class_id)
 };

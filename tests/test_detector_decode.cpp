@@ -147,6 +147,9 @@ int runModel(const std::string& model, const std::string& names, const std::stri
         std::cerr << "[ERROR] " << error << "\n";
         return 3;
     }
+    // 해석 결과 전체를 보기 위해 신뢰도 필터(DET-03)를 끔
+    detector.setConfThresholds(std::vector<float>(meta.nc, 0.0f), error);
+
     const cv::Mat image = cv::imread(image_path);
     if (image.empty()) {
         std::cerr << "[ERROR] Cannot read image: " << image_path << "\n";

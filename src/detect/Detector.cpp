@@ -59,3 +59,24 @@ std::vector<Detection> decodeDetections(const cv::Mat& output, const LetterboxIn
     }
     return detections;
 }
+
+bool isValidConfThresholds(const std::vector<float>& thresholds, int nc)
+{
+    if (nc <= 0 || static_cast<int>(thresholds.size()) != nc) return false;
+
+    // NaN은 어떤 비교도 거짓이므로 이 조건에서 함께 걸러짐
+    return std::all_of(thresholds.begin(), thresholds.end(),
+        [](float value) { return value >= 0.0f && value <= 1.0f; });
+}
+
+std::vector<Detection> filterByConfidence(const std::vector<Detection>& detections,
+    const std::vector<float>& thresholds)
+{
+    std::vector<Detection> kept;
+    kept.reserve(detections.size());
+    for (const Detection& d : detections) {
+        if (d.class_id < 0 || d.class_id >= static_cast<int>(thresholds.size())) continue;
+        if (d.score >= thresholds[d.class_id]) kept.push_back(d);
+    }
+    return kept;
+}
