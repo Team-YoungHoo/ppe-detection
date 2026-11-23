@@ -79,6 +79,11 @@ if(ONNXRUNTIME_ROOT)
   target_link_libraries(test_ort_detector PRIVATE ppe_ort)
   add_test(NAME ort_detector COMMAND test_ort_detector)
 
+  # 파이프라인 실제 실행 테스트에서도 ONNX Runtime 엔진을 고를 수 있게 함
+  target_link_libraries(test_pipeline PRIVATE ppe_ort)
+  target_compile_definitions(test_pipeline PRIVATE PPE_WITH_ORT)
+  add_dependencies(test_pipeline test_ort_detector)
+
   if(MSVC)
     target_compile_options(ppe_ort PRIVATE /utf-8)
     target_compile_options(test_ort_detector PRIVATE /utf-8)
