@@ -61,6 +61,38 @@ if(MSVC)
   endforeach()
 endif()
 
+# DET-05 ONNX Runtime 엔진 (선택)
+# SDK가 있는 PC만 CMakeUserPresets.json에 ONNXRUNTIME_ROOT를 지정함. 없으면 이 엔진만 빼고 빌드함
+set(ONNXRUNTIME_ROOT "" CACHE PATH "ONNX Runtime 1.20.0 NuGet 패키지를 푼 폴더")
+if(ONNXRUNTIME_ROOT)
+  set(ORT_INCLUDE_DIR "${ONNXRUNTIME_ROOT}/buildTransitive/native/include")
+  set(ORT_NATIVE_DIR "${ONNXRUNTIME_ROOT}/runtimes/win-x64/native")
+  if(NOT EXISTS "${ORT_INCLUDE_DIR}/onnxruntime_cxx_api.h" OR NOT EXISTS "${ORT_NATIVE_DIR}/onnxruntime.lib")
+    message(FATAL_ERROR "ONNXRUNTIME_ROOT에서 ONNX Runtime SDK를 찾을 수 없음: ${ONNXRUNTIME_ROOT}")
+  endif()
+
+  add_library(ppe_ort STATIC src/detect/OrtDetector.cpp)
+  target_include_directories(ppe_ort PUBLIC "${ORT_INCLUDE_DIR}")
+  target_link_libraries(ppe_ort PUBLIC ppe_core "${ORT_NATIVE_DIR}/onnxruntime.lib")
+
+  add_executable(test_ort_detector tests/test_ort_detector.cpp)
+  target_link_libraries(test_ort_detector PRIVATE ppe_ort)
+  add_test(NAME ort_detector COMMAND test_ort_detector)
+
+  if(MSVC)
+    target_compile_options(ppe_ort PRIVATE /utf-8)
+    target_compile_options(test_ort_detector PRIVATE /utf-8)
+  endif()
+
+  # Windows 기본 폴더의 다른 버전 onnxruntime.dll이 쓰이지 않도록 exe 옆에 복사함
+  add_custom_command(TARGET test_ort_detector POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "${ORT_NATIVE_DIR}/onnxruntime.dll"
+            "${ORT_NATIVE_DIR}/onnxruntime_providers_shared.dll"
+            "${ORT_NATIVE_DIR}/onnxruntime_providers_cuda.dll"
+            $<TARGET_FILE_DIR:test_ort_detector>)
+endif()
+
 # Windows에서 빌드 후 OpenCV DLL을 exe와 같은 폴더로 복사 (PATH 환경 변수 설정 불필요)
 if(WIN32)
   # 링크된 OpenCV DLL (예: opencv_world4xx.dll, Debug 구성은 opencv_world4xxd.dll)

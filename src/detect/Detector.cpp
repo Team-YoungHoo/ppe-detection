@@ -3,7 +3,39 @@
 #include <opencv2/dnn.hpp>
 
 #include <algorithm>
+#include <fstream>
 #include <iostream>
+
+bool loadClassNames(const std::string& names_path, const ModelMeta& meta,
+    std::vector<std::string>& names, std::string& error)
+{
+    std::ifstream file(names_path);
+    if (!file.is_open()) {
+        error = "Cannot load classes: " + names_path;
+        return false;
+    }
+
+    // Windows 줄바꿈과 파일 끝의 빈 줄은 무시함
+    std::vector<std::string> loaded;
+    std::string line;
+    while (std::getline(file, line)) {
+        if (!line.empty() && line.back() == '\r') line.pop_back();
+        loaded.push_back(line);
+    }
+    while (!loaded.empty() && loaded.back().empty()) loaded.pop_back();
+
+    if (static_cast<int>(loaded.size()) != meta.nc) {
+        error = "classes count mismatch (expected: " + std::to_string(meta.nc)
+            + ", actual: " + std::to_string(loaded.size()) + ")";
+        return false;
+    }
+    if (loaded != meta.names) {
+        error = "classes order differs from model.yaml: " + names_path;
+        return false;
+    }
+    names = std::move(loaded);
+    return true;
+}
 
 std::vector<Detection> decodeCandidates(const cv::Mat& output)
 {

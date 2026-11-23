@@ -6,11 +6,18 @@
 #pragma once
 
 #include "common/Types.h"
+#include "config/ModelMeta.h"
 #include "preprocess/Letterbox.h"
 
 #include <opencv2/core.hpp>
 
+#include <string>
 #include <vector>
+
+// DET-01. classes.txt를 읽고 개수와 순서가 model.yaml과 같은지 확인함
+// 순서가 바뀌면 class_id의 뜻이 달라지므로 두 엔진 모두 이 검사를 거침
+bool loadClassNames(const std::string& names_path, const ModelMeta& meta,
+    std::vector<std::string>& names, std::string& error);
 
 // DET-02. output: {1, 4 + 클래스 수, N} float32. 앞 4행 = cx, cy, w, h (모델 입력 픽셀), 나머지 행 = 클래스별 점수
 // 후보마다 점수가 가장 높은 클래스를 고름. 반환하는 box는 아직 모델 입력 좌표임
