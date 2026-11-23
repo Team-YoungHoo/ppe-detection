@@ -15,9 +15,17 @@ const double kFontScale = 0.5;
 const int kFontThickness = 1;
 const int kLabelPadding = 3;   // 글자 주변 여백
 
+// 이미 놓인 글자와 겹치는지 확인함
+bool overlapsAny(const cv::Rect& rect, const std::vector<cv::Rect>& placed)
+{
+    return std::any_of(placed.begin(), placed.end(),
+        [&rect](const cv::Rect& other) { return (rect & other).area() > 0; });
+}
+
 // 글자 배경을 박스 위에 놓고, 위쪽 공간이 없으면 박스 안쪽으로 내림
+// 다른 글자와 겹치면 빈자리가 나올 때까지 한 줄씩 아래로 옮김
 void drawLabel(cv::Mat& image, const std::string& text, const cv::Point& box_top_left,
-    const cv::Scalar& color)
+    const cv::Scalar& color, std::vector<cv::Rect>& placed)
 {
     int baseline = 0;
     const cv::Size text_size = cv::getTextSize(text, kFontFace, kFontScale, kFontThickness, &baseline);
@@ -27,6 +35,15 @@ void drawLabel(cv::Mat& image, const std::string& text, const cv::Point& box_top
     const int x = std::clamp(box_top_left.x, 0, image.cols - label_w);
     int y = box_top_left.y - label_h;
     if (y < 0) y = std::min(box_top_left.y, image.rows - label_h);
+
+    // 빈자리가 없으면 원래 위치에 그림
+    for (int candidate = y; candidate + label_h <= image.rows; candidate += label_h) {
+        if (!overlapsAny(cv::Rect(x, candidate, label_w, label_h), placed)) {
+            y = candidate;
+            break;
+        }
+    }
+    placed.emplace_back(x, y, label_w, label_h);
 
     cv::rectangle(image, cv::Rect(x, y, label_w, label_h), color, cv::FILLED);
     cv::putText(image, text, cv::Point(x + kLabelPadding, y + kLabelPadding + text_size.height),
@@ -65,6 +82,10 @@ cv::Mat drawDetections(const cv::Mat& frame, const std::vector<Detection>& detec
     const int max_x = view.cols - 1;
     const int max_y = view.rows - 1;
 
+    // 박스가 글자를 덮지 않도록 박스를 모두 그린 뒤 글자를 그림
+    struct Label { std::string text; cv::Point top_left; cv::Scalar color; };
+    std::vector<Label> labels;
+
     for (const Detection& d : detections) {
         cv::Scalar color;
         if (!debugColor(d.class_id, color) || d.class_id >= static_cast<int>(class_names.size())) continue;
@@ -82,7 +103,12 @@ cv::Mat drawDetections(const cv::Mat& frame, const std::vector<Detection>& detec
             std::clamp(static_cast<int>(std::lround(bottom)), 0, max_y));
 
         cv::rectangle(view, p1, p2, color, kBoxThickness);
-        drawLabel(view, detectionLabel(class_names[d.class_id], d.score), p1, color);
+        labels.push_back({ detectionLabel(class_names[d.class_id], d.score), p1, color });
+    }
+
+    std::vector<cv::Rect> placed;
+    for (const Label& label : labels) {
+        drawLabel(view, label.text, label.top_left, label.color, placed);
     }
     return view;
 }

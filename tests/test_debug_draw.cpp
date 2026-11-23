@@ -9,6 +9,7 @@
 #include "detect/OpenCvDnnDetector.h"
 #include "ui/DebugDraw.h"
 
+#include <opencv2/core.hpp>
 #include <opencv2/imgcodecs.hpp>
 
 #include <iostream>
@@ -90,6 +91,30 @@ void testDrawing()
     check(drawDetections(cv::Mat(), { { 0, 0.9f, cv::Rect2f(1, 1, 5, 5) } }, kNames).empty(), "empty frame is safe");
 }
 
+int countColor(const cv::Mat& image, const cv::Scalar& color)
+{
+    cv::Mat mask;
+    cv::inRange(image, color, color, mask);
+    return cv::countNonZero(mask);
+}
+
+void testLabelOverlap()
+{
+    const cv::Mat frame = blankFrame();
+    cv::Scalar person, helmet;
+    debugColor(0, person);
+    debugColor(1, helmet);
+
+    // 왼쪽 위가 같은 두 박스: person 글자는 위, helmet 글자는 한 줄 아래에 놓여야 함
+    const std::vector<Detection> same_corner = {
+        { 0, 0.9f, cv::Rect2f(60, 80, 100, 100) },
+        { 1, 0.8f, cv::Rect2f(60, 80, 40, 40) },
+    };
+    const cv::Mat view = drawDetections(frame, same_corner, kNames);
+    check(countColor(view(cv::Rect(60, 55, 100, 24)), person) > 50, "first label stays visible");
+    check(countColor(view(cv::Rect(60, 81, 100, 24)), helmet) > 50, "second label moves to a free line");
+}
+
 void testClipping()
 {
     const cv::Mat frame = blankFrame();
@@ -157,6 +182,7 @@ int main(int argc, char** argv)
 
     testLabelsAndColors();
     testDrawing();
+    testLabelOverlap();
     testClipping();
 
     std::cout << (g_failed == 0 ? "\nALL PASSED\n" : "\nFAILED: " + std::to_string(g_failed) + "\n");
