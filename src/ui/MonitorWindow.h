@@ -34,6 +34,9 @@ public:
     bool displayEnabled() const { return display_; }
     double fps() const { return fps_; }
 
+    // 스페이스로 멈춰 있던 전체 시간(초). 평균 FPS 계산에서 뺌
+    double pausedSeconds() const { return paused_sec_; }
+
     // 눌린 키를 동작으로 바꿈
     static UiAction actionForKey(int key);
 
@@ -51,6 +54,7 @@ private:
     bool show_fps_;
     bool display_ = false;
     double fps_ = 0.0;
+    double paused_sec_ = 0.0;
     bool has_tick_ = false;
     bool has_fps_ = false;
     Clock::time_point last_tick_;

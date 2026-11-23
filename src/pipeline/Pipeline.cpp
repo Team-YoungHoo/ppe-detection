@@ -114,7 +114,8 @@ int Pipeline::run()
         if (!keep_running) break;
     }
 
-    const double total_sec = elapsedMs(t_begin, Clock::now()) / 1000.0;
+    // 일시정지한 시간은 처리 시간이 아니므로 평균 FPS에서 뺌
+    const double total_sec = elapsedMs(t_begin, Clock::now()) / 1000.0 - window.pausedSeconds();
 
     // Log.h(SYS-04)가 준비되면 교체
     std::cout << "[INFO] Processed frames: " << processed_ << "\n"
