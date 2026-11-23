@@ -1,42 +1,43 @@
+%YAML 1.1
+---
 # TRN-06 / DET-07: export_onnx.py 가 만든 파일입니다. 직접 고치지 마세요.
-model_name: yolo11s_v3_aug
-onnx_file: best.onnx
+model_name: "yolo11s_v3_aug"
+onnx_file: "best.onnx"
 input:
-  name: images
+  name: "images"
   shape:
-  - 1
-  - 3
-  - 640
-  - 640
+    - 1
+    - 3
+    - 640
+    - 640
   width: 640
   height: 640
 output:
-  name: output0
+  name: "output0"
   shape:
-  - 1
-  - 9
-  - 8400
-  format: '[1, 4+nc, N], 행 0~3 = cx, cy, w, h (입력 이미지 픽셀), 행 4~ = 클래스별 점수 (objectness
-    없음)'
+    - 1
+    - 9
+    - 8400
+  format: "[1, 4+nc, N], 행 0~3 = cx, cy, w, h (입력 이미지 픽셀), 행 4~ = 클래스별 점수 (objectness 없음)"
   nms_included: false
 nc: 5
 names:
-- person
-- helmet
-- vest
-- no-helmet
-- no-vest
+  - "person"
+  - "helmet"
+  - "vest"
+  - "no-helmet"
+  - "no-vest"
 preprocess:
-  resize: letterbox
+  resize: "letterbox"
   pad_value: 114
   scale: 0.00392156862745098
   swap_rb: true
-  layout: NCHW
-  dtype: float32
+  layout: "NCHW"
+  dtype: "float32"
 opset: 12
 train:
-  model: yolo11s.pt
-  data: construction safety.v3-release.yolov8
+  model: "yolo11s.pt"
+  data: "construction safety.v3-release.yolov8"
   imgsz: 640
   epochs: 100
   batch: 16
@@ -50,16 +51,16 @@ train:
   hsv_s: 0.7
   hsv_v: 0.4
 source_weights:
-  file: best.pt
-  sha256: 5247e9d919a177b8fd4452401705f6d9fd0df53467c3f2f12b7d2112be8455f3
-onnx_sha256: 1f3ca87a3a2410a5584c38d710d92b63eee467003af48bf85630a88149046a5c
-exported_at: '2026-11-21T02:04:39'
-git_commit: 2ff578f
+  file: "best.pt"
+  sha256: "5247e9d919a177b8fd4452401705f6d9fd0df53467c3f2f12b7d2112be8455f3"
+onnx_sha256: "1f3ca87a3a2410a5584c38d710d92b63eee467003af48bf85630a88149046a5c"
+exported_at: "2026-11-21T02:04:39"
+git_commit: "2ff578f"
 environment:
-  python: 3.14.7
-  os: Windows-11-10.0.26200-SP0
-  torch: 2.15.0+cpu
-  ultralytics: 8.4.198
-  onnx: 1.23.2
-  opencv: 5.0.0
-  onnxruntime: 1.31.1
+  python: "3.14.7"
+  os: "Windows-11-10.0.26200-SP0"
+  torch: "2.15.0+cpu"
+  ultralytics: "8.4.198"
+  onnx: "1.23.2"
+  opencv: "5.0.0"
+  onnxruntime: "1.31.1"

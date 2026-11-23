@@ -45,6 +45,42 @@ TRAIN_KEYS = ["model", "data", "imgsz", "epochs", "batch", "seed",
               "mixup", "scale", "degrees", "fliplr", "mosaic", "hsv_h", "hsv_s", "hsv_v"]
 
 
+class QuotedStr(str):
+    """model.yaml 에 큰따옴표로 저장할 문자열입니다."""
+
+
+class MetaDumper(yaml.SafeDumper):
+    """OpenCV cv::FileStorage 가 읽을 수 있도록 목록을 들여쓰기해서 저장합니다."""
+
+    def increase_indent(self, flow=False, indentless=False):
+        return super().increase_indent(flow, False)
+
+
+MetaDumper.add_representer(
+    QuotedStr, lambda dumper, value: dumper.represent_scalar("tag:yaml.org,2002:str", str(value), style='"')
+)
+
+
+def quote_strings(value):
+    """숫자로 시작하는 해시 등을 OpenCV 가 숫자로 읽지 않도록 문자열 값에 따옴표를 붙입니다."""
+    if isinstance(value, dict):
+        return {k: quote_strings(v) for k, v in value.items()}
+    if isinstance(value, list):
+        return [quote_strings(v) for v in value]
+    if isinstance(value, str):
+        return QuotedStr(value)
+    return value
+
+
+def write_model_yaml(path, meta):
+    """PyYAML 과 OpenCV cv::FileStorage 가 모두 읽는 형식으로 model.yaml 을 저장합니다."""
+    with open(path, "w", encoding="utf-8", newline="\n") as f:
+        f.write("%YAML 1.1\n---\n")     # cv::FileStorage 는 첫 줄에 이 표시가 있어야 YAML 로 인식함
+        f.write("# TRN-06 / DET-07: export_onnx.py 가 만든 파일입니다. 직접 고치지 마세요.\n")
+        yaml.dump(quote_strings(meta), f, Dumper=MetaDumper, allow_unicode=True, sort_keys=False,
+                  default_flow_style=False, width=100000)
+
+
 def parse_args():
     p = argparse.ArgumentParser(description="학습된 모델 ONNX 변환 (TRN-06, DET-07)")
     p.add_argument("--weights", required=True, help="변환할 best.pt 경로")
@@ -212,9 +248,7 @@ def main():
         "git_commit": git_commit(),
         "environment": env,
     }
-    with open(out_dir / "model.yaml", "w", encoding="utf-8") as f:
-        f.write("# TRN-06 / DET-07: export_onnx.py 가 만든 파일입니다. 직접 고치지 마세요.\n")
-        yaml.safe_dump(meta, f, allow_unicode=True, sort_keys=False)
+    write_model_yaml(out_dir / "model.yaml", meta)
 
     print("\n===== 변환 완료 =====")
     print(f"ONNX       : {onnx_path}")
