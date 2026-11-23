@@ -115,7 +115,8 @@ def ort_runner(onnx_path, provider):
         if "CUDAExecutionProvider" not in ort.get_available_providers():
             sys.exit("[오류] 이 PC의 onnxruntime 에 CUDA가 없습니다. onnxruntime-gpu 를 설치한 실습 PC에서 실행하세요.\n"
                      f"  사용 가능: {ort.get_available_providers()}")
-        providers = ["CUDAExecutionProvider", "CPUExecutionProvider"]
+        # TF32는 기본으로 켜져 있고 계산 정밀도를 낮춰 PyTorch와 출력이 달라지므로 끕니다.
+        providers = [("CUDAExecutionProvider", {"use_tf32": 0}), "CPUExecutionProvider"]
     else:
         providers = ["CPUExecutionProvider"]
 
@@ -129,7 +130,8 @@ def ort_runner(onnx_path, provider):
     def run(blob):
         return sess.run(None, {name: blob})[0]
 
-    return run, f"ONNX Runtime {ort.__version__} ({used})"
+    mode = ", TF32 off" if provider == "cuda" else ""
+    return run, f"ONNX Runtime {ort.__version__} ({used}{mode})"
 
 
 def cv_runner(onnx_path):
