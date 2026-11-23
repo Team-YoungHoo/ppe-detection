@@ -1,0 +1,45 @@
+# 모든 설정값의 기본 파일입니다. 설정 키는 "모듈.이름" 규칙을 따릅니다(컨벤션 Packaging 3장).
+# 현재는 학습 설정(train)만 있습니다. C++ 실행 설정(detect, track, judge 등)은 SYS-03에서 추가합니다.
+
+train:
+  # 데이터셋 (TRN-01~03, 강다온 정리본). 경로는 저장소 루트 기준입니다.
+  data: "data/processed_v2/construction safety.v3-release.yolov8-20261119T040257Z-1-001/construction safety.v3-release.yolov8/data.yaml"
+  dataset_version: "construction safety.v3-release.yolov8 (valid·test 전수 검수, train 후보 검수, no-helmet 증강 232장)"
+  names: [person, helmet, vest, no-helmet, no-vest]   # 순서 변경 금지 (classes.txt, C++ 설정과 동일)
+
+  # 비교 대상 모델 (설계 회의록 2부 확정: Ultralytics 사전학습 가중치)
+  models: [yolov8s, yolov8m, yolo11s, yolo11m]
+
+  # 학습 설정 (TRN-04)
+  imgsz: 640
+  epochs: 100
+  batch: 16
+  seed: 42
+  deterministic: true
+  device: 0          # GPU 번호. GPU가 없는 PC에서 동작만 확인할 때는 --device cpu
+  project: runs      # 결과 위치: runs/<모델 이름>/ (git 제외)
+
+  # 학습 중 증강 (TRN-04 개선). 여기 적은 값만 바꾸고 나머지는 Ultralytics 기본값을 씁니다.
+  # 과적합을 줄이려고 채택. v3 데이터에서 4개 모델 모두 valid·test mAP@0.5가 올랐습니다
+  # (노션 '학습 방법 결정 과정' 6단계). 비우면({}) 프레임워크 기본값으로 학습합니다.
+  augment:
+    mixup: 0.15      # 기본값 0.0
+    scale: 0.7       # 기본값 0.5
+    degrees: 5.0     # 기본값 0.0
+
+eval:
+  # 탐지 성능 평가 (EVL-01). 모델·imgsz·device는 train 설정을 그대로 씁니다.
+  splits: [val, test]                  # data.yaml의 키 이름 (val = valid 폴더)
+  iou_thr: 0.5                         # mAP@0.5. 0.50~0.95 사이 0.05 단위만 가능
+  target_map: 0.80                     # 목표 mAP@0.5 (NFR-01)
+  focus_classes: [no-helmet, no-vest]  # recall을 따로 확인할 미착용 클래스
+  output: runs/eval                    # 결과 표(results.csv, results.md)와 그래프 위치 (git 제외)
+
+compare:
+  # 모델 크기별 비교 (TRN-05). 정확도는 evaluate.py 결과(runs/eval/results.csv)를 읽습니다.
+  select_split: val     # 모델 선정에 쓸 분할 (test는 최종 보고용으로 남김)
+  speed_split: test     # 속도 측정에 쓸 이미지
+  warmup: 10            # 속도 측정 전 버리는 이미지 수 (GPU 첫 실행은 느림)
+  repeats: 3            # 속도 측정 반복 횟수, 평균을 씀 (DET-05·EVL-02와 같은 기준)
+  target_fps: 10        # NFR-02. 원래 기준은 C++ 전체 파이프라인 FPS(EVL-02)이며, 여기서는 Python 처리 시간으로 잠정 판단
+  output: runs/compare  # 비교 표(compare.csv, compare.md) 위치 (git 제외)
