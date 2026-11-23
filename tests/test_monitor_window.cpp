@@ -60,7 +60,10 @@ void testWindowFail()
     check(!window.displayEnabled(), "window failure: switches to no-display");
 
     const cv::Mat frame(120, 160, CV_8UC3, cv::Scalar(10, 20, 30));
-    check(window.show(frame) && window.show(frame), "window failure: processing keeps running");
+    const bool first = window.show(frame);
+    // 두 호출 사이 시간이 0으로 측정되면 FPS를 계산하지 않으므로 잠깐 기다림
+    std::this_thread::sleep_for(std::chrono::milliseconds(2));
+    check(first && window.show(frame), "window failure: processing keeps running");
     check(window.fps() > 0.0, "window failure: fps is still measured");
 }
 
