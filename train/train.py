@@ -53,6 +53,21 @@ def check_dataset(data_yaml, expected_names):
         sys.exit(f"[오류] 클래스 순서가 다릅니다.\n  data.yaml: {names}\n  설정 파일: {expected_names}")
 
 
+# augment에 넣으면 안 되는 키: train_one이 직접 넘기는 값이라 겹치면 오류가 나거나 설정이 섞입니다.
+RESERVED_KEYS = {"data", "imgsz", "epochs", "batch", "seed", "deterministic", "device", "project", "name", "exist_ok"}
+
+
+def check_augment(augment):
+    """train.augment가 dict인지, 다른 학습 설정과 겹치는 키가 없는지 확인합니다."""
+    if augment is None:
+        return
+    if not isinstance(augment, dict):
+        sys.exit(f"[오류] train.augment는 '이름: 값' 목록이어야 합니다: {augment!r}")
+    clash = RESERVED_KEYS & set(augment)
+    if clash:
+        sys.exit(f"[오류] train.augment에 다른 학습 설정 키가 있습니다: {sorted(clash)}")
+
+
 def is_oom(err):
     return "out of memory" in str(err).lower()
 
@@ -88,6 +103,7 @@ def train_one(model_name, cfg, data_yaml, name):
     from ultralytics import YOLO
 
     batch = cfg["batch"]
+    augment = cfg.get("augment") or {}                 # 설정 파일의 증강 값 (없으면 프레임워크 기본값)
     while True:
         print(f"\n===== {model_name} 학습 시작 (batch={batch}) =====")
         model = YOLO(f"{model_name}.pt")                # 사전학습(COCO) 가중치에서 시작
@@ -103,6 +119,7 @@ def train_one(model_name, cfg, data_yaml, name):
                 project=str(ROOT / cfg["project"]),
                 name=name,
                 exist_ok=False,
+                **augment,
             )
             return model.trainer.save_dir, batch
         except Exception as e:
@@ -128,7 +145,10 @@ def save_record(save_dir, model_name, cfg, batch_used, env):
         "batch_used": batch_used,
         "seed": cfg["seed"],
         "deterministic": cfg["deterministic"],
-        "augmentation": "Ultralytics 기본값 (전체 인자는 같은 폴더의 args.yaml)",
+        "augmentation": {
+            "overrides": dict(cfg.get("augment") or {}),
+            "note": "overrides 외에는 Ultralytics 기본값 (전체 인자는 같은 폴더의 args.yaml)",
+        },
         "git_commit": git_commit(),
         "finished_at": datetime.now().isoformat(timespec="seconds"),
         "environment": env,
@@ -147,6 +167,7 @@ def main():
 
     data_yaml = (ROOT / cfg["data"]).resolve()
     check_dataset(data_yaml, cfg["names"])
+    check_augment(cfg.get("augment"))
 
     env = environment_info()
     print("실행 환경:", env)
