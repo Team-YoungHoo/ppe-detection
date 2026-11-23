@@ -12,6 +12,7 @@ add_library(ppe_core STATIC
   src/io/VideoSource.cpp
   src/pipeline/Pipeline.cpp
   src/preprocess/Letterbox.cpp
+  src/ui/DebugDraw.cpp
   src/ui/MonitorWindow.cpp
 )
 target_include_directories(ppe_core PUBLIC src)
@@ -49,10 +50,13 @@ add_test(NAME detector_filter COMMAND test_detector_filter)
 add_executable(test_detector_nms tests/test_detector_nms.cpp)
 target_link_libraries(test_detector_nms PRIVATE ppe_core)
 add_test(NAME detector_nms COMMAND test_detector_nms)
+add_executable(test_debug_draw tests/test_debug_draw.cpp)
+target_link_libraries(test_debug_draw PRIVATE ppe_core)
+add_test(NAME debug_draw COMMAND test_debug_draw)
 
 # MSVC가 소스 파일을 UTF-8로 읽도록 설정 (한글 주석·문자열 깨짐 방지)
 if(MSVC)
-  foreach(t ppe_core safety_app test_video_source test_letterbox test_monitor_window test_pipeline test_model_meta test_detector_load test_detector_decode test_detector_filter test_detector_nms)
+  foreach(t ppe_core safety_app test_video_source test_letterbox test_monitor_window test_pipeline test_model_meta test_detector_load test_detector_decode test_detector_filter test_detector_nms test_debug_draw)
     target_compile_options(${t} PRIVATE /utf-8)
   endforeach()
 endif()
