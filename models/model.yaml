@@ -50,6 +50,7 @@ train:
   hsv_h: 0.015
   hsv_s: 0.7
   hsv_v: 0.4
+  date: "2026-11-19T13:49:25"
 source_weights:
   file: "best.pt"
   sha256: "5247e9d919a177b8fd4452401705f6d9fd0df53467c3f2f12b7d2112be8455f3"

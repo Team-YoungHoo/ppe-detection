@@ -142,8 +142,11 @@ def check_classes(model):
 
 def train_record(model):
     """best.pt 안에 저장된 학습 설정을 꺼냅니다. 없는 항목은 건너뜁니다."""
-    args = (getattr(model, "ckpt", None) or {}).get("train_args") or {}
+    ckpt = getattr(model, "ckpt", None) or {}
+    args = ckpt.get("train_args") or {}
     rec = {k: args[k] for k in TRAIN_KEYS if k in args}
+    if ckpt.get("date"):
+        rec["date"] = str(ckpt["date"])[:19]   # 학습 날짜 (best.pt 저장 시각, 초 단위)
     if "data" in rec:
         # 학습 PC의 전체 경로 대신 데이터셋 폴더 이름만 남깁니다 (PC마다 경로가 다르고, 사용자 이름이 들어 있음)
         parts = str(rec["data"]).replace("\\", "/").rstrip("/").split("/")
