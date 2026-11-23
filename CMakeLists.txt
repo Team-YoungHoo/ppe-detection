@@ -7,6 +7,7 @@ find_package(OpenCV REQUIRED)
 # safety_app과 테스트가 같이 씀
 add_library(ppe_core STATIC
   src/config/ModelMeta.cpp
+  src/detect/OpenCvDnnDetector.cpp
   src/io/VideoSource.cpp
   src/pipeline/Pipeline.cpp
   src/preprocess/Letterbox.cpp
@@ -35,10 +36,13 @@ add_test(NAME pipeline COMMAND test_pipeline)
 add_executable(test_model_meta tests/test_model_meta.cpp)
 target_link_libraries(test_model_meta PRIVATE ppe_core)
 add_test(NAME model_meta COMMAND test_model_meta)
+add_executable(test_detector_load tests/test_detector_load.cpp)
+target_link_libraries(test_detector_load PRIVATE ppe_core)
+add_test(NAME detector_load COMMAND test_detector_load)
 
 # MSVC가 소스 파일을 UTF-8로 읽도록 설정 (한글 주석·문자열 깨짐 방지)
 if(MSVC)
-  foreach(t ppe_core safety_app test_video_source test_letterbox test_monitor_window test_pipeline test_model_meta)
+  foreach(t ppe_core safety_app test_video_source test_letterbox test_monitor_window test_pipeline test_model_meta test_detector_load)
     target_compile_options(${t} PRIVATE /utf-8)
   endforeach()
 endif()
