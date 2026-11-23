@@ -156,6 +156,15 @@ bool ModelMeta::load(const std::string& path, ModelMeta& out, std::string& error
         error = "input.shape does not match input size " + std::to_string(width);
         return false;
     }
+    // 학습 기록의 imgsz가 있으면 실제 입력 크기와 같아야 함
+    const cv::FileNode train = fs["train"];
+    if (train.isMap() && !train["imgsz"].isNone()) {
+        const cv::FileNode train_imgsz = train["imgsz"];
+        if (!train_imgsz.isInt() || static_cast<int>(train_imgsz) != width) {
+            error = "train.imgsz does not match input size " + std::to_string(width);
+            return false;
+        }
+    }
     if (meta.nc <= 0 || static_cast<int>(meta.names.size()) != meta.nc) {
         error = "names count does not match nc";
         return false;

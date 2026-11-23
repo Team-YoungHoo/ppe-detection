@@ -54,6 +54,7 @@ preprocess:
   dtype: "float32"
 train:
   data: "construction safety.v3-release.yolov8"
+  imgsz: 640
   scale: 0.7
 onnx_sha256: "1f3ca87a3a2410a5584c38d710d92b63eee467003af48bf85630a88149046a5c"
 exported_at: "2026-11-21T02:04:39"
@@ -136,6 +137,9 @@ void testErrors()
     expectError(replaced(valid, "  width: 640", "  width: 960"), "square", "wrong imgsz (DET-07 check)");
     expectError(replaced(replaced(valid, "  width: 640", "  width: 960"), "  height: 640", "  height: 960"),
         "input.shape", "imgsz different from input.shape");
+    expectError(replaced(valid, "  imgsz: 640", "  imgsz: 320"), "train.imgsz", "train.imgsz differs from input size");
+    expectError(replaced(valid, "  imgsz: 640", "  imgsz: \"abc\""), "train.imgsz", "train.imgsz is not a number");
+    check(loadText(replaced(valid, "  imgsz: 640\n", ""), meta, error), "train.imgsz is optional");
     expectError(replaced(valid, "  - \"no-vest\"\n", ""), "names", "names count differs from nc");
     expectError(replaced(valid, "    - 9\n", "    - 8\n"), "output.shape", "output channels differ");
     expectError(replaced(valid, "pad_value: 114", "pad_value: \"abc\""), "pad_value", "pad value is not a number");
