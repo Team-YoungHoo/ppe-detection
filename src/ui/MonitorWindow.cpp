@@ -28,6 +28,7 @@ void MonitorWindow::open(bool display)
     has_tick_ = false;
     has_fps_ = false;
     fps_ = 0.0;
+    paused_sec_ = 0.0;
 
     if (!display) return;
 
@@ -104,14 +105,20 @@ void MonitorWindow::updateFps()
 bool MonitorWindow::waitWhilePaused()
 {
     const Clock::time_point pause_start = Clock::now();
+    bool keep_running = true;
     while (true) {
         const UiAction action = actionForKey(cv::waitKey(kPauseWaitMs));
-        if (action == UiAction::Quit || !isWindowOpen()) return false;
+        if (action == UiAction::Quit || !isWindowOpen()) {
+            keep_running = false;
+            break;
+        }
         if (action == UiAction::TogglePause) break;
     }
     // 멈춰 있던 시간은 처리 시간이 아니므로 FPS 계산에서 뺌
-    last_tick_ += Clock::now() - pause_start;
-    return true;
+    const Clock::duration paused = Clock::now() - pause_start;
+    last_tick_ += paused;
+    paused_sec_ += std::chrono::duration<double>(paused).count();
+    return keep_running;
 }
 
 bool MonitorWindow::isWindowOpen() const
