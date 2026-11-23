@@ -1,4 +1,4 @@
-// DET-02 단위 테스트 (src/detect/Detector의 decodeDetections)
+// DET-02 단위 테스트 (src/detect/Detector의 decodeCandidates, restoreToOriginal)
 //
 // 사용법:
 //   test_detector_decode
@@ -58,6 +58,12 @@ cv::Mat makeOutput(const std::vector<Candidate>& candidates, int nc = 5)
 LetterboxInfo infoFor(int width, int height)
 {
     return letterbox(cv::Mat(height, width, CV_8UC3, cv::Scalar(0, 0, 0)), 640).info;
+}
+
+// 출력 해석과 좌표 복원을 이어서 실행함
+std::vector<Detection> decodeDetections(const cv::Mat& output, const LetterboxInfo& info)
+{
+    return restoreToOriginal(decodeCandidates(output), info);
 }
 
 const std::vector<float> kPerson = { 0.9f, 0.1f, 0.0f, 0.0f, 0.0f };
@@ -147,8 +153,9 @@ int runModel(const std::string& model, const std::string& names, const std::stri
         std::cerr << "[ERROR] " << error << "\n";
         return 3;
     }
-    // 해석 결과 전체를 보기 위해 신뢰도 필터(DET-03)를 끔
+    // 해석 결과 전체를 보기 위해 신뢰도 필터(DET-03)와 NMS(DET-04)를 끔
     detector.setConfThresholds(std::vector<float>(meta.nc, 0.0f), error);
+    detector.setNmsIou(1.0f, error);
 
     const cv::Mat image = cv::imread(image_path);
     if (image.empty()) {

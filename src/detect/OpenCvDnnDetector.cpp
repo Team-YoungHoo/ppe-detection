@@ -121,7 +121,11 @@ std::vector<Detection> OpenCvDnnDetector::detect(const cv::Mat& blob, const Lett
     if (net_.empty() || blob.empty()) return {};
 
     net_.setInput(blob);
-    return filterByConfidence(decodeDetections(net_.forward(), info), conf_thresholds_);
+
+    // 명세 순서: 출력 해석 -> 신뢰도 필터 -> NMS -> 원본 좌표 복원
+    const auto candidates = decodeCandidates(net_.forward());
+    const auto confident = filterByConfidence(candidates, conf_thresholds_);
+    return restoreToOriginal(applyNms(confident, nms_iou_), info);
 }
 
 bool OpenCvDnnDetector::setConfThresholds(const std::vector<float>& thresholds, std::string& error)
@@ -131,5 +135,15 @@ bool OpenCvDnnDetector::setConfThresholds(const std::vector<float>& thresholds, 
         return false;
     }
     conf_thresholds_ = thresholds;
+    return true;
+}
+
+bool OpenCvDnnDetector::setNmsIou(float iou, std::string& error)
+{
+    if (!isValidNmsIou(iou)) {
+        error = "Invalid NMS IoU (need a 0~1 value)";
+        return false;
+    }
+    nms_iou_ = iou;
     return true;
 }

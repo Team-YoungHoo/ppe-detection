@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "detect/Detector.h"
 #include "detect/IDetector.h"
 
 #include <opencv2/dnn.hpp>
@@ -15,10 +16,13 @@ public:
 
     bool setConfThresholds(const std::vector<float>& thresholds, std::string& error) override;
 
+    bool setNmsIou(float iou, std::string& error) override;
+
     const std::vector<std::string>& classNames() const override { return names_; }
 
 private:
     cv::dnn::Net net_;
     std::vector<std::string> names_;
     std::vector<float> conf_thresholds_;  // 클래스별 신뢰도 임계값 (순서 = class_id)
+    float nms_iou_ = kDefaultNmsIou;      // NMS IoU 값
 };

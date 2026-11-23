@@ -26,6 +26,9 @@ public:
     // DET-03. 클래스별 신뢰도 임계값을 바꿈. 잘못된 값이면 false를 반환하고 기존 값을 유지함
     virtual bool setConfThresholds(const std::vector<float>& thresholds, std::string& error) = 0;
 
+    // DET-04. NMS IoU 값을 바꿈. 잘못된 값이면 false를 반환하고 기존 값을 유지함
+    virtual bool setNmsIou(float iou, std::string& error) = 0;
+
     // 클래스 이름 (순서 = class_id)
     virtual const std::vector<std::string>& classNames() const = 0;
 };

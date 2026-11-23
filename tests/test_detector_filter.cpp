@@ -90,6 +90,9 @@ int runModel(const std::string& model, const std::string& names, const std::stri
         return 2;
     }
 
+    // 신뢰도 필터만의 결과를 보기 위해 NMS(DET-04)를 끔
+    detector.setNmsIou(1.0f, error);
+
     const LetterboxResult boxed = letterbox(image, meta.imgsz, meta.pad_value);
     const cv::Mat blob = toBlob(boxed.image, meta.scale, meta.swap_rb);
     const auto kept = detector.detect(blob, boxed.info);
