@@ -11,6 +11,8 @@ public:
     bool load(const std::string& model_path, const std::string& names_path,
         const ModelMeta& meta, std::string& error) override;
 
+    std::vector<Detection> detect(const cv::Mat& blob, const LetterboxInfo& info) override;
+
     const std::vector<std::string>& classNames() const override { return names_; }
 
 private:

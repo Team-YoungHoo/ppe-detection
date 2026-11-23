@@ -1,5 +1,7 @@
 #include "detect/OpenCvDnnDetector.h"
 
+#include "detect/Detector.h"
+
 #include <opencv2/core/utility.hpp>
 
 #include <filesystem>
@@ -111,4 +113,12 @@ bool OpenCvDnnDetector::load(const std::string& model_path, const std::string& n
     net_ = std::move(net);
     names_ = std::move(names);
     return true;
+}
+
+std::vector<Detection> OpenCvDnnDetector::detect(const cv::Mat& blob, const LetterboxInfo& info)
+{
+    if (net_.empty() || blob.empty()) return {};
+
+    net_.setInput(blob);
+    return decodeDetections(net_.forward(), info);
 }
