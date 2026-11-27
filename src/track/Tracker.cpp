@@ -57,24 +57,16 @@ std::vector<TrackState> Tracker::update(const std::vector<Detection>& person_box
     // 2~3. 매칭 (트랙 또는 탐지가 없으면 헝가리안 없이 모두 미매칭)
     const size_t num_tracks = tracks_.size();
     const size_t num_dets = person_boxes.size();
+    std::vector<cv::Rect2f> detected;
+    detected.reserve(num_dets);
+    for (const Detection& d : person_boxes) detected.push_back(d.box);
+    const MatchResult match = associate(predicted, detected, options_.iou_threshold);
+
     std::vector<int> det_of_track(num_tracks, -1);
     std::vector<bool> det_matched(num_dets, false);
-    if (num_tracks > 0 && num_dets > 0) {
-        std::vector<std::vector<double>> cost(num_tracks, std::vector<double>(num_dets));
-        std::vector<std::vector<float>> overlap(num_tracks, std::vector<float>(num_dets));
-        for (size_t t = 0; t < num_tracks; ++t) {
-            for (size_t d = 0; d < num_dets; ++d) {
-                overlap[t][d] = iou(predicted[t], person_boxes[d].box);
-                cost[t][d] = 1.0 - overlap[t][d];
-            }
-        }
-        const std::vector<int> assignment = solveAssignment(cost);
-        for (size_t t = 0; t < num_tracks; ++t) {
-            const int d = assignment[t];
-            if (d < 0 || overlap[t][d] < options_.iou_threshold) continue;
-            det_of_track[t] = d;
-            det_matched[d] = true;
-        }
+    for (const auto& [t, d] : match.matches) {
+        det_of_track[t] = d;
+        det_matched[d] = true;
     }
 
     // 4~5. 기존 트랙 보정과 상태 전이

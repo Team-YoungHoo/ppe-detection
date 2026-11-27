@@ -115,3 +115,40 @@ std::vector<int> solveAssignment(const std::vector<std::vector<double>>& cost)
     }
     return result;
 }
+
+MatchResult associate(const std::vector<cv::Rect2f>& track_boxes,
+    const std::vector<cv::Rect2f>& detection_boxes, float iou_threshold)
+{
+    const int num_tracks = static_cast<int>(track_boxes.size());
+    const int num_dets = static_cast<int>(detection_boxes.size());
+    std::vector<int> det_of_track(num_tracks, -1);
+    std::vector<bool> det_matched(num_dets, false);
+
+    if (num_tracks > 0 && num_dets > 0) {
+        std::vector<std::vector<double>> cost(num_tracks, std::vector<double>(num_dets));
+        std::vector<std::vector<float>> overlap(num_tracks, std::vector<float>(num_dets));
+        for (int t = 0; t < num_tracks; ++t) {
+            for (int d = 0; d < num_dets; ++d) {
+                overlap[t][d] = iou(track_boxes[t], detection_boxes[d]);
+                cost[t][d] = 1.0 - overlap[t][d];
+            }
+        }
+        const std::vector<int> assignment = solveAssignment(cost);
+        for (int t = 0; t < num_tracks; ++t) {
+            const int d = assignment[t];
+            if (d < 0 || overlap[t][d] < iou_threshold) continue;
+            det_of_track[t] = d;
+            det_matched[d] = true;
+        }
+    }
+
+    MatchResult result;
+    for (int t = 0; t < num_tracks; ++t) {
+        if (det_of_track[t] >= 0) result.matches.emplace_back(t, det_of_track[t]);
+        else result.unmatched_tracks.push_back(t);
+    }
+    for (int d = 0; d < num_dets; ++d) {
+        if (!det_matched[d]) result.unmatched_detections.push_back(d);
+    }
+    return result;
+}

@@ -57,12 +57,32 @@ void testAssignment()
     check(solveAssignment({ { 0.7 } }) == std::vector<int>({ 0 }), "hungarian: 1x1");
 }
 
+void testAssociate()
+{
+    // 트랙 0은 탐지 1과 겹치고, 트랙 1은 탐지 0과 조금(IoU 1/7 < 0.3) 겹치며, 탐지 2는 혼자 있음
+    const std::vector<cv::Rect2f> tracks = { cv::Rect2f(0, 0, 10, 10), cv::Rect2f(100, 100, 10, 10) };
+    const std::vector<cv::Rect2f> dets = { cv::Rect2f(105, 105, 10, 10), cv::Rect2f(1, 0, 10, 10),
+        cv::Rect2f(300, 300, 10, 10) };
+    const MatchResult m = associate(tracks, dets, 0.3f);
+    check(m.matches == std::vector<std::pair<int, int>>({ { 0, 1 } }), "associate: matched pair (0, 1)");
+    check(m.unmatched_tracks == std::vector<int>({ 1 }), "associate: low IoU track is unmatched");
+    check(m.unmatched_detections == std::vector<int>({ 0, 2 }), "associate: unmatched detections 0 and 2");
+
+    const MatchResult no_tracks = associate({}, dets, 0.3f);
+    check(no_tracks.matches.empty() && no_tracks.unmatched_tracks.empty()
+        && no_tracks.unmatched_detections == std::vector<int>({ 0, 1, 2 }), "associate: no tracks");
+    const MatchResult no_dets = associate(tracks, {}, 0.3f);
+    check(no_dets.matches.empty() && no_dets.unmatched_tracks == std::vector<int>({ 0, 1 })
+        && no_dets.unmatched_detections.empty(), "associate: no detections");
+}
+
 }  // namespace 끝
 
 int main()
 {
     testIou();
     testAssignment();
+    testAssociate();
     std::cout << (g_failed == 0 ? "\nALL PASSED\n" : "\nFAILED: " + std::to_string(g_failed) + "\n");
     return g_failed == 0 ? 0 : 1;
 }
