@@ -6,7 +6,8 @@
 //   test_pipeline --play <영상> --no-display  실제 영상을 창 없이 끝까지 처리
 //                                             영상을 열 수 없으면 종료 코드 2
 //   test_pipeline --detect <opencv|ort-cpu|ort-cuda> <best.onnx> <classes.txt> <model.yaml> <영상>
-//                 [--debug-draw] [--no-display]
+//                 [--debug-draw] [--no-display] [--track-log <csv>]
+//                                             --track-log: 프레임별 트랙(frame,id,state,x,y,w,h)을 CSV로 저장
 //                                             실제 모델로 탐지까지 처리. 모델 로드 실패는 종료 코드 3
 
 #include "detect/OpenCvDnnDetector.h"
@@ -113,6 +114,8 @@ void testDetector(const std::string& path)
             "detector: all frames are processed");
         check(detector.calls == kFrames, "detector: called once per frame");
         check(detector.valid_input, "detector: receives blob and original frame size");
+        check(pipeline.createdTracks() == 1 && pipeline.confirmedTracks() == 1,
+            "tracker: one still person keeps one track id");
     }
     {
         FakeDetector detector([](int call) { return call < 5; });
@@ -195,6 +198,7 @@ int runDetect(int argc, char** argv)
         const std::string flag = argv[i];
         if (flag == "--debug-draw") options.debug_draw = true;
         if (flag == "--no-display") options.display = false;
+        if (flag == "--track-log" && i + 1 < argc) options.track_log = argv[++i];
     }
 
     Pipeline pipeline(options);
