@@ -4,8 +4,9 @@ configs/default.yaml 의 train 설정으로 사전학습 모델들을 같은 조
 결과는 runs/<모델 이름>/ 에 저장되고, 재현용 기록(config.yaml)을 함께 남깁니다(TRN-07).
 
 사용 예 (저장소 루트에서 실행):
-    python train/train.py                       # 설정 파일의 모델 4개 모두 학습
+    python train/train.py                       # 설정 파일의 모델 모두 학습
     python train/train.py --models yolo11s      # 한 모델만 학습
+    python train/train.py --models yolo26s yolo26m --name-suffix _v3_aug   # YOLO26만 추가 학습 (이슈 #16)
     python train/train.py --models yolov8s --epochs 1 --device cpu --name-suffix _smoke   # 동작 확인용
 """
 
@@ -121,7 +122,9 @@ def train_one(model_name, cfg, data_yaml, name):
                 exist_ok=False,
                 **augment,
             )
-            return model.trainer.save_dir, batch
+            # optimizer=auto 일 때 실제로 고른 optimizer (YOLO26은 MuSGD 등 다른 것을 고를 수 있어 기록함)
+            opt = getattr(model.trainer, "optimizer", None)
+            return model.trainer.save_dir, batch, type(opt).__name__ if opt is not None else "unknown"
         except Exception as e:
             if is_oom(e) and batch > 1:
                 print(f"[경고] GPU 메모리 부족: batch {batch} -> {batch // 2} 로 다시 시도합니다.")
@@ -132,7 +135,7 @@ def train_one(model_name, cfg, data_yaml, name):
             raise
 
 
-def save_record(save_dir, model_name, cfg, batch_used, env):
+def save_record(save_dir, model_name, cfg, batch_used, env, optimizer_used="unknown"):
     """재현용 기록을 runs/<실험이름>/config.yaml 에 남깁니다(TRN-07)."""
     record = {
         "model": model_name,
@@ -145,6 +148,7 @@ def save_record(save_dir, model_name, cfg, batch_used, env):
         "batch_used": batch_used,
         "seed": cfg["seed"],
         "deterministic": cfg["deterministic"],
+        "optimizer_used": optimizer_used,
         "augmentation": {
             "overrides": dict(cfg.get("augment") or {}),
             "note": "overrides 외에는 Ultralytics 기본값 (전체 인자는 같은 폴더의 args.yaml)",
@@ -176,8 +180,8 @@ def main():
 
     results = []
     for m in models:
-        save_dir, batch_used = train_one(m, cfg, data_yaml, name=m + args.name_suffix)
-        save_record(save_dir, m, cfg, batch_used, env)
+        save_dir, batch_used, optimizer_used = train_one(m, cfg, data_yaml, name=m + args.name_suffix)
+        save_record(save_dir, m, cfg, batch_used, env, optimizer_used)
         results.append((m, save_dir, batch_used))
 
     print("\n===== 학습 완료 =====")
