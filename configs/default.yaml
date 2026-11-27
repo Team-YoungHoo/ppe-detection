@@ -8,7 +8,9 @@ train:
   names: [person, helmet, vest, no-helmet, no-vest]   # 순서 변경 금지 (classes.txt, C++ 설정과 동일)
 
   # 비교 대상 모델 (설계 회의록 2부 확정: Ultralytics 사전학습 가중치)
-  models: [yolov8s, yolov8m, yolo11s, yolo11m]
+  # yolo26s·m: 교수님 중간 피드백 1번(최신 모델 비교)으로 추가 (이슈 #16). 기존 4개를 다시 학습하지 않으려면
+  # train.py 에 --models yolo26s yolo26m 을 붙입니다. evaluate.py·compare_models.py 는 6개를 함께 봅니다.
+  models: [yolov8s, yolov8m, yolo11s, yolo11m, yolo26s, yolo26m]
 
   # 학습 설정 (TRN-04)
   imgsz: 640
