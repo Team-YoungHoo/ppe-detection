@@ -14,6 +14,7 @@ add_library(ppe_core STATIC
   src/preprocess/Letterbox.cpp
   src/track/Hungarian.cpp
   src/track/KalmanBoxTracker.cpp
+  src/track/Tracker.cpp
   src/ui/DebugDraw.cpp
   src/ui/MonitorWindow.cpp
 )
@@ -61,13 +62,16 @@ add_test(NAME hungarian COMMAND test_hungarian)
 add_executable(test_kalman_box_tracker tests/test_kalman_box_tracker.cpp)
 target_link_libraries(test_kalman_box_tracker PRIVATE ppe_core)
 add_test(NAME kalman_box_tracker COMMAND test_kalman_box_tracker)
+add_executable(test_tracker tests/test_tracker.cpp)
+target_link_libraries(test_tracker PRIVATE ppe_core)
+add_test(NAME tracker COMMAND test_tracker)
 # 실제 모델과 이미지가 필요한 비교·속도 측정 도구라 add_test에는 넣지 않음
 add_executable(test_detector_compare tests/test_detector_compare.cpp)
 target_link_libraries(test_detector_compare PRIVATE ppe_core)
 
 # MSVC가 소스 파일을 UTF-8로 읽도록 설정 (한글 주석·문자열 깨짐 방지)
 if(MSVC)
-  foreach(t ppe_core safety_app test_video_source test_letterbox test_monitor_window test_pipeline test_model_meta test_detector_load test_detector_decode test_detector_filter test_detector_nms test_debug_draw test_hungarian test_kalman_box_tracker test_detector_compare)
+  foreach(t ppe_core safety_app test_video_source test_letterbox test_monitor_window test_pipeline test_model_meta test_detector_load test_detector_decode test_detector_filter test_detector_nms test_debug_draw test_hungarian test_kalman_box_tracker test_tracker test_detector_compare)
     target_compile_options(${t} PRIVATE /utf-8)
   endforeach()
 endif()
