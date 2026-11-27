@@ -88,11 +88,26 @@ def make_blob(img, meta):
 
 # ---------- 세 가지 실행 엔진 ----------
 
+def use_one2many(net):
+    """YOLO26처럼 one-to-one(NMS-free) 헤드가 함께 있는 모델을 one-to-many 출력 {1, 4+nc, N}으로 맞춥니다.
+
+    export_onnx.py 는 nms=None 으로 one-to-many 출력을 내보내므로, 기준값(PyTorch)도 같은 헤드에서 나와야 합니다.
+    one-to-one 헤드가 없는 YOLOv8/11 은 아무것도 바꾸지 않습니다.
+    """
+    head = net.model[-1]
+    if getattr(head, "one2one_cv2", None) is None:
+        return
+    if hasattr(net, "end2end"):
+        net.end2end = False
+    head.end2end = False
+
+
 def torch_runner(weights):
     import torch
     from ultralytics import YOLO
 
     net = YOLO(str(weights)).model.float().eval()
+    use_one2many(net)                         # 합치기(fuse) 전에 정해야 함: fuse가 쓰지 않는 쪽 헤드를 지움
     try:
         net = net.fuse(verbose=False)       # 변환할 때처럼 Conv+BN 합치기
     except TypeError:

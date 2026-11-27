@@ -171,9 +171,13 @@ def check_onnx(path, imgsz, nc):
 
     if in_shape != [1, 3, imgsz, imgsz]:
         sys.exit(f"[오류] 입력 형태가 다릅니다: {in_shape} (기대 [1, 3, {imgsz}, {imgsz}])")
-    # YOLOv8/11: {1, 4+nc, N}. 4 = 박스(cx, cy, w, h), 나머지 = 클래스별 점수. objectness 없음
+    # YOLOv8/11/26(one-to-many): {1, 4+nc, N}. 4 = 박스(cx, cy, w, h), 나머지 = 클래스별 점수. objectness 없음
     if len(out_shape) != 3 or out_shape[0] != 1 or out_shape[1] != 4 + nc:
-        sys.exit(f"[오류] 출력 형태가 다릅니다: {out_shape} (기대 [1, {4 + nc}, N])")
+        hint = ""
+        if len(out_shape) == 3 and out_shape[2] == 6:
+            hint = ("\n  NMS-free(end-to-end) 출력 {1, max_det, 6} 으로 보입니다. "
+                    "export 인자가 nms=None 인지, ultralytics 버전이 nms 인자를 지원하는지 확인하세요.")
+        sys.exit(f"[오류] 출력 형태가 다릅니다: {out_shape} (기대 [1, {4 + nc}, N]){hint}")
     # 박스 후보 수: stride 8, 16, 32 격자 칸 수의 합 (640 -> 8400, 960 -> 18900)
     expected_n = sum((imgsz // s) ** 2 for s in (8, 16, 32))
     if out_shape[2] != expected_n:
@@ -208,13 +212,16 @@ def main():
     print("변환 환경:", env)
 
     # 3. ONNX 변환. 입력 크기 고정(dynamic=False), FP32, NMS는 C++에서 하므로 넣지 않음
+    #    nms=None: NMS를 넣지 않은 one-to-many 출력 {1, 4+nc, N}. YOLOv8/11/26 모두 같은 형태가 나옵니다.
+    #    nms=False는 쓰지 않습니다. YOLO26처럼 one-to-one 헤드가 있는 모델에서는 NMS-free 헤드를 골라
+    #    출력이 {1, 300, 6}(x1, y1, x2, y2, 점수, 클래스)으로 바뀌어 C++ 후처리(DET-02~04)와 맞지 않습니다.
     exported = model.export(
         format="onnx",
         imgsz=args.imgsz,
         opset=args.opset,
         simplify=not args.no_simplify,
         dynamic=False,
-        nms=False,
+        nms=None,
         batch=1,
         device="cpu",
     )
