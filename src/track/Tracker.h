@@ -24,7 +24,7 @@
 // 설정값 (configs/default.yaml의 track: 섹션과 같은 기본값)
 struct TrackerOptions {
     int start_id = 1;            // track.start_id
-    float iou_threshold = 0.3f;  // track.iou_threshold
+    float iou_threshold = 0.2f;  // track.iou_threshold
     int min_hits = 3;            // track.min_hits
     int max_age = 30;            // track.max_age
 };
