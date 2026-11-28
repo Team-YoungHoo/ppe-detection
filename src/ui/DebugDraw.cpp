@@ -112,3 +112,29 @@ cv::Mat drawDetections(const cv::Mat& frame, const std::vector<Detection>& detec
     }
     return view;
 }
+
+cv::Mat drawTrackIds(const cv::Mat& frame, const std::vector<TrackState>& tracks)
+{
+    static const cv::Scalar kTrackColor(255, 255, 0);  // 하늘색 (착용 판단 색과 겹치지 않게)
+    cv::Mat view = frame.clone();
+    if (view.empty()) return view;
+
+    const int max_x = view.cols - 1;
+    const int max_y = view.rows - 1;
+    std::vector<cv::Rect> placed;
+    for (const TrackState& t : tracks) {
+        if (t.state != TrackState::CONFIRMED) continue;
+        const float right = t.box.x + t.box.width;
+        const float bottom = t.box.y + t.box.height;
+        if (right < 0.0f || bottom < 0.0f || t.box.x > max_x || t.box.y > max_y) continue;
+
+        const cv::Point p1(std::clamp(static_cast<int>(std::lround(t.box.x)), 0, max_x),
+            std::clamp(static_cast<int>(std::lround(t.box.y)), 0, max_y));
+        const cv::Point p2(std::clamp(static_cast<int>(std::lround(right)), 0, max_x),
+            std::clamp(static_cast<int>(std::lround(bottom)), 0, max_y));
+        cv::rectangle(view, p1, p2, kTrackColor, 1);
+        // 탐지 라벨(박스 위)과 겹치지 않도록 박스 아래쪽 안에 씀
+        drawLabel(view, "ID " + std::to_string(t.id), cv::Point(p1.x, p2.y), kTrackColor, placed);
+    }
+    return view;
+}

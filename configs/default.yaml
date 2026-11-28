@@ -1,5 +1,5 @@
 # 모든 설정값의 기본 파일입니다. 설정 키는 "모듈.이름" 규칙을 따릅니다(컨벤션 Packaging 3장).
-# 현재는 학습 설정(train)만 있습니다. C++ 실행 설정(detect, track, judge 등)은 SYS-03에서 추가합니다.
+# 현재 C++ 프로그램은 이 파일을 읽지 않습니다(Config 로더 SYS-03 전). track: 값은 코드 기본값(TrackerOptions)과 같게 맞춰 둔 기록용입니다.
 
 train:
   # 데이터셋 (TRN-01~03, 강다온 정리본). 경로는 저장소 루트 기준입니다.
@@ -43,3 +43,10 @@ compare:
   repeats: 3            # 속도 측정 반복 횟수, 평균을 씀 (DET-05·EVL-02와 같은 기준)
   target_fps: 10        # NFR-02. 원래 기준은 C++ 전체 파이프라인 FPS(EVL-02)이며, 여기서는 Python 처리 시간으로 잠정 판단
   output: runs/compare  # 비교 표(compare.csv, compare.md) 위치 (git 제외)
+
+track:
+  # 작업자 추적 (TRK-01~04, SORT 방식). 기본값은 src/track/Tracker.h의 TrackerOptions와 같습니다.
+  start_id: 1          # 첫 추적 ID. 1씩 늘리며 지운 ID는 다시 쓰지 않습니다
+  iou_threshold: 0.2   # 예측 박스와 탐지 박스의 IoU가 이보다 낮으면 같은 사람으로 보지 않습니다
+  min_hits: 3          # 이 횟수만큼 매칭되면 TENTATIVE -> CONFIRMED
+  max_age: 30          # CONFIRMED·LOST 트랙이 이 프레임 수를 넘게 매칭되지 않으면 삭제합니다

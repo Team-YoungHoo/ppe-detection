@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <chrono>
 #include <exception>
+#include <fstream>
 #include <iostream>
 #include <vector>
 
@@ -20,6 +21,8 @@ using Clock = std::chrono::steady_clock;
 const int kExitOk = 0;
 const int kExitUnknownError = 1;
 const int kExitVideoError = 2;
+
+const int kPersonClassId = 0;  // classes.txt 첫 줄 (순서 변경 금지)
 
 double elapsedMs(Clock::time_point from, Clock::time_point to)
 {
@@ -45,6 +48,8 @@ int Pipeline::run()
 {
     processed_ = 0;
     failed_ = 0;
+    created_tracks_ = 0;
+    confirmed_tracks_ = 0;
 
     VideoSource source;
     if (!source.open(options_.input)) return kExitVideoError;
@@ -52,7 +57,15 @@ int Pipeline::run()
     MonitorWindow window;
     window.open(options_.display);
 
-    std::vector<double> read_ms, preprocess_ms, detect_ms, display_ms;
+    Tracker tracker(options_.track);
+    std::ofstream track_log;
+    if (!options_.track_log.empty()) {
+        track_log.open(options_.track_log);
+        if (track_log) track_log << "frame,id,state,x,y,w,h\n";
+        else std::cerr << "[WARN] Cannot open track log: " << options_.track_log << "\n";
+    }
+
+    std::vector<double> read_ms, preprocess_ms, detect_ms, track_ms, display_ms;
     FrameData data{};
     int consecutive_fail = 0;
     int exit_code = kExitOk;
@@ -91,15 +104,33 @@ int Pipeline::run()
         }
         const auto t_detect = Clock::now();
 
-        // 4. 탐지 결과 분류 자리
-        // 5. 추적 자리
+        // 4. 탐지 결과 분류: 추적에는 person(class_id 0) 박스만 넘김
+        //    착용 판단(JDG)용 helmet·vest 분류는 해당 이슈에서 채움
+        std::vector<Detection> persons;
+        for (const Detection& d : detections) {
+            if (d.class_id == kPersonClassId) persons.push_back(d);
+        }
+
+        // 5. 추적 (TRK-01~04)
+        tracker.setFrameSize(data.frame.size());
+        const std::vector<TrackState> tracks = tracker.update(persons, data.frame_idx);
+        if (track_log) {
+            static const char* kStateNames[] = { "TENTATIVE", "CONFIRMED", "LOST" };
+            for (const TrackState& t : tracks) {
+                track_log << data.frame_idx << ',' << t.id << ',' << kStateNames[t.state] << ','
+                    << t.box.x << ',' << t.box.y << ',' << t.box.width << ',' << t.box.height << '\n';
+            }
+        }
+        const auto t_track = Clock::now();
+
         // 6. 착용 판단 자리
         // 7. 경고 자리
 
         // 8. 화면 출력 (UI-01). 디버그 표시는 --debug-draw일 때만 그림 (DET-06)
+        //    CONFIRMED 트랙 ID는 확인용 임시 표시 (정식 표시는 UI-03)
         const bool draw = options_.display && options_.debug_draw && options_.detector != nullptr;
         const cv::Mat shown = draw
-            ? drawDetections(data.frame, detections, options_.detector->classNames())
+            ? drawTrackIds(drawDetections(data.frame, detections, options_.detector->classNames()), tracks)
             : data.frame;
         const bool keep_running = window.show(shown);
         const auto t_display = Clock::now();
@@ -108,11 +139,15 @@ int Pipeline::run()
         read_ms.push_back(elapsedMs(t_start, t_read));
         preprocess_ms.push_back(elapsedMs(t_read, t_preprocess));
         detect_ms.push_back(elapsedMs(t_preprocess, t_detect));
-        display_ms.push_back(elapsedMs(t_detect, t_display));
+        track_ms.push_back(elapsedMs(t_detect, t_track));
+        display_ms.push_back(elapsedMs(t_track, t_display));
         ++processed_;
 
         if (!keep_running) break;
     }
+
+    created_tracks_ = tracker.createdTracks();
+    confirmed_tracks_ = tracker.confirmedTracks();
 
     // 일시정지한 시간은 처리 시간이 아니므로 평균 FPS에서 뺌
     const double total_sec = elapsedMs(t_begin, Clock::now()) / 1000.0 - window.pausedSeconds();
@@ -120,10 +155,12 @@ int Pipeline::run()
     // Log.h(SYS-04)가 준비되면 교체
     std::cout << "[INFO] Processed frames: " << processed_ << "\n"
         << "[INFO] Failed frames: " << failed_ << "\n"
+        << "[INFO] Tracks: created " << created_tracks_ << ", confirmed " << confirmed_tracks_ << "\n"
         << "[INFO] Average FPS: " << (total_sec > 0.0 ? processed_ / total_sec : 0.0) << "\n"
         << "[INFO] Stage time (median ms): read " << medianMs(read_ms)
         << ", preprocess " << medianMs(preprocess_ms)
         << ", detect " << medianMs(detect_ms)
+        << ", track " << medianMs(track_ms)
         << ", display " << medianMs(display_ms) << "\n";
     return exit_code;
 }

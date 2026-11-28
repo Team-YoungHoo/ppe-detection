@@ -24,3 +24,7 @@ std::string detectionLabel(const std::string& class_name, float score);
 // 박스가 화면 밖으로 나가면 화면 안으로 잘라서 그림
 cv::Mat drawDetections(const cv::Mat& frame, const std::vector<Detection>& detections,
     const std::vector<std::string>& class_names);
+
+// TRK-01 확인용 임시 표시: CONFIRMED 트랙의 "ID n"을 박스 아래쪽에 그림 (입력 프레임은 바꾸지 않음)
+// 정식 ID 표시는 UI-03에서 만들면 교체함
+cv::Mat drawTrackIds(const cv::Mat& frame, const std::vector<TrackState>& tracks);
